@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>This is a title.</title>
+</head>
+
+<body>
+
+    <h1>Heading</h1>
+
+    <p>Enter text below:</p>
+
+    <input id="input">
+
+    <button onclick="bpushed()">Enter</button>
+
+    <button onclick="b2pushed()">Say it back</button>
+
+    <p>Output:</p>
+
+    <div id="output">
+        (Output will display here)
+    </div>
+
+    <script>
+        let result = "";
+        
+        function bpushed() {
+            const text =
+                document.getElementById("input").value;
+            
+            result =
+                text.toUpperCase();
+            
+                document.getElementById("output").textContent =
+                    result;
+                
+            
+        }
+
+        function b2pushed() {
+            alert(result);
+        }
+        
+    </script>
+</body>
+
+</html>

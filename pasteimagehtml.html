@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paste Image Viewer</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background-color: white;
+    transition: background-color 0.3s;
+    user-select: none;
+  }
+
+  body.dark {
+    background-color: #121212;
+  }
+
+  #container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #img {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(0px) scale(1);
+    cursor: grab;
+    transition: transform 0.05s;
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <img id="img" src="" alt="">
+</div>
+
+<script>
+const body = document.body;
+const img = document.getElementById('img');
+
+let scale = 1;
+let offsetX = 0;
+let offsetY = 0;
+let isDragging = false;
+let startX, startY;
+
+// Dark/bright mode toggle
+document.addEventListener('keydown', e => {
+  if (e.key.toLowerCase() === 'd') body.classList.toggle('dark');
+
+  if (e.key === 'ArrowUp') {
+    scale *= 1.2;
+    updateTransform();
+  }
+  if (e.key === 'ArrowDown') {
+    scale /= 1.2;
+    updateTransform();
+  }
+});
+
+// Paste image
+document.addEventListener('paste', e => {
+  const items = e.clipboardData.items;
+  for (let item of items) {
+    if (item.type.startsWith('image')) {
+      const file = item.getAsFile();
+      const reader = new FileReader();
+      reader.onload = event => {
+        img.src = event.target.result;
+        scale = 1;
+        offsetX = 0;
+        offsetY = 0;
+        updateTransform();
+      }
+      reader.readAsDataURL(file);
+      break;
+    }
+  }
+});
+
+// Disable browser image drag
+img.ondragstart = e => e.preventDefault();
+
+// Dragging
+img.addEventListener('mousedown', e => {
+  isDragging = true;
+  startX = e.clientX - offsetX;
+  startY = e.clientY - offsetY;
+  img.style.cursor = 'grabbing';
+});
+
+document.addEventListener('mouseup', () => {
+  isDragging = false;
+  img.style.cursor = 'grab';
+});
+
+document.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  offsetX = e.clientX - startX;
+  offsetY = e.clientY - startY;
+  updateTransform();
+});
+
+// Scroll-to-zoom fully pointer-relative
+img.addEventListener('wheel', e => {
+  e.preventDefault();
+
+  const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+
+  const rect = img.getBoundingClientRect();
+
+  // Compute pointer relative to **actual center position of image** 
+  const imgCenterX = rect.left + rect.width / 2;
+  const imgCenterY = rect.top + rect.height / 2;
+
+  const dx = e.clientX - imgCenterX;
+  const dy = e.clientY - imgCenterY;
+
+  offsetX -= dx / scale * (zoomFactor - 1);
+  offsetY -= dy / scale * (zoomFactor - 1);
+
+  scale *= zoomFactor;
+  updateTransform();
+}, { passive: false });
+
+// Update transform
+function updateTransform() {
+  img.style.transform = `translateX(calc(-50% + ${offsetX}px)) translateY(${offsetY}px) scale(${scale})`;
+}
+</script>
+</body>
+</html>
