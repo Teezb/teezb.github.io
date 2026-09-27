@@ -1,49 +1,2874 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>This is a title.</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Images & PDFs to PDF</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        background: #111;
+        color: #eee;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .container {
+        width: min(900px, calc(100% - 32px));
+        margin: 50px auto;
+    }
+
+    h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+
+    .description {
+        margin: 12px 0 32px;
+        color: #999;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    /* =========================
+       INSERT BOX
+    ========================= */
+
+    .upload-box {
+        display: block;
+        width: 100%;
+        background: #181818;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 36px 28px;
+        text-align: center;
+        cursor: pointer;
+        transition:
+            background 0.15s ease,
+            border-color 0.15s ease;
+    }
+
+    .upload-box:hover {
+        background: #1d1d1d;
+        border-color: #555;
+    }
+
+    .upload-box.dragging {
+        background: #222;
+        border-color: #888;
+    }
+
+    .upload-box strong {
+        font-size: 15px;
+        font-weight: 500;
+    }
+
+    #fileInput {
+        display: none;
+    }
+
+    /* =========================
+       COVER SECTION
+    ========================= */
+
+    .cover-section {
+        margin-top: 24px;
+        padding: 18px;
+        background: #181818;
+        border: 1px solid #333;
+        border-radius: 8px;
+    }
+
+    .cover-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .cover-toggle input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: #eee;
+        cursor: pointer;
+    }
+
+    .cover-toggle span {
+        font-size: 14px;
+        color: #eee;
+    }
+
+    .cover-fields {
+        display: none;
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid #2d2d2d;
+    }
+
+    .cover-fields.visible {
+        display: block;
+    }
+
+    .cover-field {
+        margin-bottom: 14px;
+    }
+
+    .cover-field:last-child {
+        margin-bottom: 0;
+    }
+
+    .cover-field label {
+        display: block;
+        margin-bottom: 7px;
+        color: #999;
+        font-size: 12px;
+    }
+
+    .cover-field input,
+    .cover-field textarea,
+    .cover-size-select {
+        width: 100%;
+        padding: 10px 11px;
+
+        background: #111;
+        border: 1px solid #333;
+        border-radius: 6px;
+
+        color: #eee;
+        font-family: inherit;
+        font-size: 14px;
+
+        outline: none;
+    }
+
+    .cover-field input:focus,
+    .cover-field textarea:focus,
+    .cover-size-select:focus {
+        border-color: #777;
+    }
+
+    .cover-field textarea {
+        min-height: 90px;
+        resize: vertical;
+        line-height: 1.5;
+    }
+
+    .cover-title-input {
+        min-height: 70px !important;
+    }
+
+    .cover-description-input {
+        min-height: 120px !important;
+    }
+
+    .cover-size-select {
+        cursor: pointer;
+    }
+
+    /* =========================
+       FILE NAME
+    ========================= */
+
+    .filename-section {
+        margin-top: 24px;
+    }
+
+    .filename-label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+        color: #aaa;
+    }
+
+    .filename-input {
+        width: 100%;
+        padding: 11px 12px;
+
+        border: 1px solid #333;
+        border-radius: 6px;
+
+        background: #181818;
+        color: #eee;
+
+        font-family: inherit;
+        font-size: 14px;
+
+        outline: none;
+    }
+
+    .filename-input:focus {
+        border-color: #777;
+    }
+
+    /* =========================
+       BUTTONS
+    ========================= */
+
+    .controls {
+        display: flex;
+        gap: 10px;
+
+        margin-top: 28px;
+        margin-bottom: 34px;
+    }
+
+    button {
+        border: 1px solid #333;
+        background: #181818;
+        color: #eee;
+
+        border-radius: 6px;
+
+        padding: 10px 15px;
+
+        font-size: 14px;
+
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #222;
+    }
+
+    button:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+
+    .create-button {
+        background: #eee;
+        border-color: #eee;
+        color: #111;
+    }
+
+    .create-button:hover {
+        background: #fff;
+    }
+
+    /* =========================
+       GRID
+    ========================= */
+
+    #fileGrid {
+        display: grid;
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .empty {
+        grid-column: 1 / -1;
+
+        padding: 55px 20px;
+
+        text-align: center;
+
+        color: #777;
+
+        font-size: 14px;
+
+        background: #181818;
+
+        border: 1px solid #292929;
+
+        border-radius: 8px;
+    }
+
+    /* =========================
+       FILE CARD
+    ========================= */
+
+    .file-card {
+        position: relative;
+
+        background: #181818;
+
+        border: 1px solid #333;
+
+        border-radius: 8px;
+
+        overflow: hidden;
+
+        cursor: grab;
+
+        min-width: 0;
+    }
+
+    .file-card:active {
+        cursor: grabbing;
+    }
+
+    .file-card.dragging {
+        opacity: 0.35;
+    }
+
+    .file-card.drag-over {
+        outline: 2px solid #aaa;
+        outline-offset: 3px;
+    }
+
+    /* =========================
+       PREVIEW
+    ========================= */
+
+    .file-preview {
+        width: 100%;
+        height: 260px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: #242424;
+
+        overflow: hidden;
+    }
+
+    .file-preview img {
+        display: block;
+
+        width: 100%;
+        height: 100%;
+
+        object-fit: contain;
+    }
+
+    .pdf-preview {
+        position: relative;
+
+        width: 100%;
+        height: 100%;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        overflow: hidden;
+    }
+
+    .pdf-preview canvas {
+        max-width: 88%;
+        max-height: 92%;
+
+        width: auto;
+        height: auto;
+
+        background: white;
+
+        box-shadow:
+            0 4px 15px rgba(0, 0, 0, 0.35);
+    }
+
+    .pdf-page-count {
+        position: absolute;
+
+        bottom: 10px;
+        left: 10px;
+
+        padding: 5px 8px;
+
+        border-radius: 5px;
+
+        background: rgba(0, 0, 0, 0.75);
+
+        color: #fff;
+
+        font-size: 11px;
+    }
+
+    /* =========================
+       FILE INFO
+    ========================= */
+
+    .file-info {
+        padding: 11px 12px 13px;
+    }
+
+    .file-name {
+        font-size: 13px;
+        color: #eee;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .file-type {
+        margin-top: 5px;
+        color: #777;
+        font-size: 11px;
+    }
+
+    .file-number {
+        font-weight: bold;
+        color: #aaa;
+        margin-right: 5px;
+    }
+
+    /* =========================
+       REMOVE
+    ========================= */
+
+    .remove-button {
+        position: absolute;
+
+        top: 9px;
+        right: 9px;
+
+        width: 29px;
+        height: 29px;
+
+        padding: 0;
+
+        border: none;
+
+        border-radius: 50%;
+
+        background: rgba(0, 0, 0, 0.78);
+
+        color: white;
+
+        font-size: 17px;
+
+        line-height: 29px;
+
+        z-index: 5;
+    }
+
+    .remove-button:hover {
+        background: rgba(0, 0, 0, 0.96);
+    }
+
+    .footer-text {
+        margin: 28px 0 0;
+
+        color: #666;
+
+        font-size: 12px;
+
+        line-height: 1.5;
+    }
+
+    /* =========================
+       RESPONSIVE
+    ========================= */
+
+    @media (max-width: 700px) {
+
+        .container {
+            margin: 30px auto;
+        }
+
+        #fileGrid {
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            gap: 16px;
+        }
+
+        .file-preview {
+            height: 230px;
+        }
+    }
+
+    @media (max-width: 450px) {
+
+        .container {
+            width: calc(100% - 24px);
+            margin: 24px auto;
+        }
+
+        #fileGrid {
+            grid-template-columns: 1fr;
+        }
+
+        .file-preview {
+            height: 280px;
+        }
+
+        .controls {
+            margin-top: 24px;
+            margin-bottom: 28px;
+        }
+    }
+</style>
 </head>
 
 <body>
 
-    <h1>Heading</h1>
+<div class="container">
 
-    <p>Enter text below:</p>
+    <h1>Images & PDFs to PDF</h1>
 
-    <input id="input">
+    <p class="description">
+        Add images or PDFs, arrange them in the order you want, and create one PDF.
+    </p>
 
-    <button onclick="bpushed()">Enter</button>
 
-    <button onclick="b2pushed()">Say it back</button>
+    <!-- =========================
+         INSERT
+    ========================= -->
 
-    <p>Output:</p>
+    <label class="upload-box" id="uploadBox">
 
-    <div id="output">
-        (Output will display here)
+        <strong>Insert images or PDFs</strong>
+
+        <input
+            id="fileInput"
+            type="file"
+            accept="image/*,.pdf,application/pdf"
+            multiple
+        >
+
+    </label>
+
+
+    <!-- =========================
+         COVER
+    ========================= -->
+
+    <div class="cover-section">
+
+        <label class="cover-toggle">
+
+            <input
+                type="checkbox"
+                id="coverToggle"
+            >
+
+            <span>
+                Add cover page
+            </span>
+
+        </label>
+
+
+        <div
+            class="cover-fields"
+            id="coverFields"
+        >
+
+            <div class="cover-field">
+
+                <label for="coverSize">
+                    Cover size
+                </label>
+
+                <select
+                    id="coverSize"
+                    class="cover-size-select"
+                >
+
+                    <option value="first">
+                        Match first page
+                    </option>
+
+                    <option value="a4">
+                        A4
+                    </option>
+
+                    <option value="letter">
+                        Letter
+                    </option>
+
+                    <option value="average">
+                        Average size
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- TITLE -->
+
+            <div class="cover-field">
+
+                <label for="coverTitle">
+                    Title
+                </label>
+
+                <textarea
+                    id="coverTitle"
+                    class="cover-title-input"
+                    placeholder="My Document"
+                ></textarea>
+
+            </div>
+
+
+            <!-- DESCRIPTION -->
+
+            <div class="cover-field">
+
+                <label for="coverSubtitle">
+                    Description
+                </label>
+
+                <textarea
+                    id="coverSubtitle"
+                    class="cover-description-input"
+                    placeholder="A short description"
+                ></textarea>
+
+            </div>
+
+
+            <!-- AUTHOR -->
+
+            <div class="cover-field">
+
+                <label for="coverAuthor">
+                    Author
+                </label>
+
+                <input
+                    id="coverAuthor"
+                    type="text"
+                    placeholder="Your Name"
+                >
+
+            </div>
+
+
+            <!-- DATE -->
+
+            <div class="cover-field">
+
+                <label for="coverDate">
+                    Date
+                </label>
+
+                <input
+                    id="coverDate"
+                    type="text"
+                >
+
+            </div>
+
+        </div>
+
     </div>
 
-    <script>
-        let result = "";
-        
-        function bpushed() {
-            const text =
-                document.getElementById("input").value;
-            
-            result =
-                text.toUpperCase();
-            
-                document.getElementById("output").textContent =
-                    result;
-                
-            
+
+    <!-- =========================
+         FILE NAME
+    ========================= -->
+
+    <div class="filename-section">
+
+        <label
+            class="filename-label"
+            for="filenameInput"
+        >
+            PDF file name
+        </label>
+
+        <input
+            class="filename-input"
+            id="filenameInput"
+            type="text"
+            value="images"
+            placeholder="Enter a file name"
+            autocomplete="off"
+        >
+
+    </div>
+
+
+    <!-- =========================
+         BUTTONS
+    ========================= -->
+
+    <div class="controls">
+
+        <button
+            class="create-button"
+            id="createPdf"
+        >
+            Create PDF
+        </button>
+
+        <button
+            id="clearAll"
+        >
+            Clear all
+        </button>
+
+    </div>
+
+
+    <!-- =========================
+         FILE PREVIEW
+    ========================= -->
+
+    <div id="fileGrid">
+
+        <div class="empty">
+            No images or PDFs inserted yet.
+        </div>
+
+    </div>
+
+
+    <p class="footer-text">
+        Drag files to change their order. PDFs remain as PDFs and are added with all of their pages.
+    </p>
+
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+
+<script>
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+
+/* =========================
+   ELEMENTS
+========================= */
+
+const fileInput =
+    document.getElementById("fileInput");
+
+const uploadBox =
+    document.getElementById("uploadBox");
+
+const fileGrid =
+    document.getElementById("fileGrid");
+
+const createPdfButton =
+    document.getElementById("createPdf");
+
+const clearAllButton =
+    document.getElementById("clearAll");
+
+const filenameInput =
+    document.getElementById("filenameInput");
+
+const coverToggle =
+    document.getElementById("coverToggle");
+
+const coverFields =
+    document.getElementById("coverFields");
+
+const coverSize =
+    document.getElementById("coverSize");
+
+const coverTitle =
+    document.getElementById("coverTitle");
+
+const coverSubtitle =
+    document.getElementById("coverSubtitle");
+
+const coverAuthor =
+    document.getElementById("coverAuthor");
+
+const coverDate =
+    document.getElementById("coverDate");
+
+
+let files = [];
+
+let draggedIndex = null;
+
+
+/* =========================
+   AUTOMATIC DATE
+========================= */
+
+function updateCoverDate() {
+
+    coverDate.value =
+        new Intl.DateTimeFormat(
+            undefined,
+            {
+                month: "long",
+                year: "numeric"
+            }
+        ).format(new Date());
+
+}
+
+updateCoverDate();
+
+
+/* =========================
+   COVER TOGGLE
+========================= */
+
+coverToggle.addEventListener(
+    "change",
+    function () {
+
+        coverFields.classList.toggle(
+            "visible",
+            this.checked
+        );
+
+    }
+);
+
+
+/* =========================
+   UPLOAD
+========================= */
+
+fileInput.addEventListener(
+    "change",
+    async function () {
+
+        await addFiles(
+            Array.from(this.files)
+        );
+
+        this.value = "";
+
+    }
+);
+
+
+uploadBox.addEventListener(
+    "dragover",
+    function (event) {
+
+        event.preventDefault();
+
+        uploadBox.classList.add(
+            "dragging"
+        );
+
+    }
+);
+
+
+uploadBox.addEventListener(
+    "dragleave",
+    function () {
+
+        uploadBox.classList.remove(
+            "dragging"
+        );
+
+    }
+);
+
+
+uploadBox.addEventListener(
+    "drop",
+    async function (event) {
+
+        event.preventDefault();
+
+        uploadBox.classList.remove(
+            "dragging"
+        );
+
+        await addFiles(
+            Array.from(
+                event.dataTransfer.files
+            )
+        );
+
+    }
+);
+
+
+/* =========================
+   ADD FILES
+========================= */
+
+async function addFiles(newFiles) {
+
+    const validFiles =
+        newFiles.filter(file => {
+
+            return (
+                file.type.startsWith("image/") ||
+                file.type === "application/pdf" ||
+                file.name.toLowerCase().endsWith(".pdf")
+            );
+
+        });
+
+
+    for (const file of validFiles) {
+
+        if (isPdf(file)) {
+
+            await addPdfFile(file);
+
+        } else {
+
+            files.push({
+
+                type: "image",
+
+                file: file,
+
+                name: file.name
+
+            });
+
         }
 
-        function b2pushed() {
-            alert(result);
+    }
+
+
+    renderFiles();
+
+}
+
+
+/* =========================
+   ADD PDF
+========================= */
+
+async function addPdfFile(file) {
+
+    const buffer =
+        await file.arrayBuffer();
+
+
+    const pdf =
+        await pdfjsLib.getDocument({
+            data: buffer
+        }).promise;
+
+
+    files.push({
+
+        type: "pdf",
+
+        file: file,
+
+        name: file.name,
+
+        pageCount: pdf.numPages
+
+    });
+
+}
+
+
+/* =========================
+   PDF CHECK
+========================= */
+
+function isPdf(file) {
+
+    return (
+        file.type === "application/pdf" ||
+        file.name.toLowerCase().endsWith(".pdf")
+    );
+
+}
+
+
+/* =========================
+   RENDER FILES
+========================= */
+
+function renderFiles() {
+
+    fileGrid.innerHTML = "";
+
+
+    if (files.length === 0) {
+
+        fileGrid.innerHTML = `
+            <div class="empty">
+                No images or PDFs inserted yet.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    files.forEach(
+        (item, index) => {
+
+            const card =
+                document.createElement("div");
+
+            card.className =
+                "file-card";
+
+            card.draggable = true;
+
+
+            const preview =
+                document.createElement("div");
+
+            preview.className =
+                "file-preview";
+
+
+            if (
+                item.type === "image"
+            ) {
+
+                renderImagePreview(
+                    item,
+                    preview
+                );
+
+            } else {
+
+                renderPdfPreview(
+                    item,
+                    preview
+                );
+
+            }
+
+
+            const info =
+                document.createElement("div");
+
+            info.className =
+                "file-info";
+
+
+            const name =
+                document.createElement("div");
+
+            name.className =
+                "file-name";
+
+
+            name.innerHTML =
+                `<span class="file-number">
+                    ${index + 1}.
+                </span>
+                ${escapeHtml(item.name)}`;
+
+
+            const type =
+                document.createElement("div");
+
+            type.className =
+                "file-type";
+
+
+            type.textContent =
+                item.type === "pdf"
+                    ? "PDF"
+                    : "Image";
+
+
+            info.appendChild(name);
+
+            info.appendChild(type);
+
+
+            const removeButton =
+                document.createElement("button");
+
+            removeButton.className =
+                "remove-button";
+
+            removeButton.textContent =
+                "×";
+
+            removeButton.title =
+                "Remove file";
+
+
+            removeButton.addEventListener(
+                "click",
+                function (event) {
+
+                    event.preventDefault();
+
+                    event.stopPropagation();
+
+                    files.splice(
+                        index,
+                        1
+                    );
+
+                    renderFiles();
+
+                }
+            );
+
+
+            card.appendChild(preview);
+
+            card.appendChild(info);
+
+            card.appendChild(
+                removeButton
+            );
+
+
+            card.addEventListener(
+                "dragstart",
+                function () {
+
+                    draggedIndex =
+                        index;
+
+                    card.classList.add(
+                        "dragging"
+                    );
+
+                }
+            );
+
+
+            card.addEventListener(
+                "dragend",
+                function () {
+
+                    draggedIndex =
+                        null;
+
+                    card.classList.remove(
+                        "dragging"
+                    );
+
+                    document
+                        .querySelectorAll(
+                            ".file-card"
+                        )
+                        .forEach(
+                            element => {
+
+                                element.classList.remove(
+                                    "drag-over"
+                                );
+
+                            }
+                        );
+
+                }
+            );
+
+
+            card.addEventListener(
+                "dragover",
+                function (event) {
+
+                    event.preventDefault();
+
+                    if (
+                        draggedIndex ===
+                        index
+                    ) {
+
+                        return;
+
+                    }
+
+                    card.classList.add(
+                        "drag-over"
+                    );
+
+                }
+            );
+
+
+            card.addEventListener(
+                "dragleave",
+                function () {
+
+                    card.classList.remove(
+                        "drag-over"
+                    );
+
+                }
+            );
+
+
+            card.addEventListener(
+                "drop",
+                function (event) {
+
+                    event.preventDefault();
+
+                    card.classList.remove(
+                        "drag-over"
+                    );
+
+
+                    if (
+                        draggedIndex === null ||
+                        draggedIndex === index
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    const movedFile =
+                        files.splice(
+                            draggedIndex,
+                            1
+                        )[0];
+
+
+                    files.splice(
+                        index,
+                        0,
+                        movedFile
+                    );
+
+
+                    renderFiles();
+
+                }
+            );
+
+
+            fileGrid.appendChild(card);
+
         }
-        
-    </script>
+    );
+
+}
+
+
+/* =========================
+   IMAGE PREVIEW
+========================= */
+
+function renderImagePreview(
+    item,
+    container
+) {
+
+    const img =
+        document.createElement("img");
+
+
+    img.src =
+        URL.createObjectURL(
+            item.file
+        );
+
+
+    img.alt =
+        item.name;
+
+
+    container.appendChild(img);
+
+}
+
+
+/* =========================
+   PDF PREVIEW
+========================= */
+
+async function renderPdfPreview(
+    item,
+    container
+) {
+
+    const wrapper =
+        document.createElement("div");
+
+    wrapper.className =
+        "pdf-preview";
+
+
+    container.appendChild(
+        wrapper
+    );
+
+
+    try {
+
+        const buffer =
+            await item.file.arrayBuffer();
+
+
+        const pdf =
+            await pdfjsLib.getDocument({
+                data: buffer
+            }).promise;
+
+
+        const pdfPage =
+            await pdf.getPage(1);
+
+
+        const baseViewport =
+            pdfPage.getViewport({
+                scale: 1
+            });
+
+
+        const maxWidth = 245;
+
+        const maxHeight = 245;
+
+
+        const displayScale =
+            Math.min(
+                maxWidth /
+                    baseViewport.width,
+
+                maxHeight /
+                    baseViewport.height
+            );
+
+
+        const renderScale =
+            displayScale * 2;
+
+
+        const viewport =
+            pdfPage.getViewport({
+                scale: renderScale
+            });
+
+
+        const canvas =
+            document.createElement("canvas");
+
+
+        canvas.width =
+            Math.ceil(
+                viewport.width
+            );
+
+        canvas.height =
+            Math.ceil(
+                viewport.height
+            );
+
+
+        const context =
+            canvas.getContext(
+                "2d",
+                {
+                    alpha: false
+                }
+            );
+
+
+        await pdfPage.render({
+
+            canvasContext:
+                context,
+
+            viewport:
+                viewport
+
+        }).promise;
+
+
+        wrapper.appendChild(
+            canvas
+        );
+
+
+        const pageCount =
+            document.createElement("div");
+
+
+        pageCount.className =
+            "pdf-page-count";
+
+
+        pageCount.textContent =
+            `${item.pageCount} ${
+                item.pageCount === 1
+                    ? "page"
+                    : "pages"
+            }`;
+
+
+        wrapper.appendChild(
+            pageCount
+        );
+
+
+    } catch (error) {
+
+        wrapper.innerHTML =
+            `<span style="
+                color:#777;
+                font-size:13px;
+            ">
+                Unable to preview PDF
+            </span>`;
+
+    }
+
+}
+
+
+/* =========================
+   CREATE PDF
+========================= */
+
+createPdfButton.addEventListener(
+    "click",
+    async function () {
+
+        if (files.length === 0) {
+
+            alert(
+                "Insert at least one image or PDF first."
+            );
+
+            return;
+        }
+
+
+        let filename =
+            filenameInput.value.trim();
+
+
+        if (!filename) {
+
+            filename =
+                "images";
+
+        }
+
+
+        filename =
+            filename.replace(
+                /[<>:"/\\|?*]/g,
+                ""
+            );
+
+
+        if (!filename) {
+
+            filename =
+                "images";
+
+        }
+
+
+        createPdfButton.disabled =
+            true;
+
+        createPdfButton.textContent =
+            "Creating PDF...";
+
+
+        try {
+
+            const outputPdf =
+                await PDFLib.PDFDocument.create();
+
+
+            if (
+                coverToggle.checked
+            ) {
+
+                await addCoverPage(
+                    outputPdf
+                );
+
+            }
+
+
+            for (
+                const item of files
+            ) {
+
+                if (
+                    item.type === "image"
+                ) {
+
+                    await addImageToPdf(
+                        outputPdf,
+                        item.file
+                    );
+
+                } else {
+
+                    await addEntirePdf(
+                        outputPdf,
+                        item.file
+                    );
+
+                }
+
+            }
+
+
+            const pdfBytes =
+                await outputPdf.save();
+
+
+            const blob =
+                new Blob(
+                    [pdfBytes],
+                    {
+                        type:
+                            "application/pdf"
+                    }
+                );
+
+
+            const url =
+                URL.createObjectURL(
+                    blob
+                );
+
+
+            const link =
+                document.createElement(
+                    "a"
+                );
+
+
+            link.href =
+                url;
+
+            link.download =
+                filename + ".pdf";
+
+
+            document.body.appendChild(
+                link
+            );
+
+
+            link.click();
+
+            link.remove();
+
+
+            setTimeout(
+                () => {
+
+                    URL.revokeObjectURL(
+                        url
+                    );
+
+                },
+                1000
+            );
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "There was a problem creating the PDF."
+            );
+
+
+        } finally {
+
+            createPdfButton.disabled =
+                false;
+
+            createPdfButton.textContent =
+                "Create PDF";
+
+        }
+
+    }
+);
+
+
+/* =========================
+   COVER PAGE
+========================= */
+
+async function addCoverPage(
+    outputPdf
+) {
+
+    const A4_WIDTH =
+        595.28;
+
+    const A4_HEIGHT =
+        841.89;
+
+    const LETTER_WIDTH =
+        612;
+
+    const LETTER_HEIGHT =
+        792;
+
+
+    let pageWidth =
+        A4_WIDTH;
+
+    let pageHeight =
+        A4_HEIGHT;
+
+
+    /*
+        First page dimensions
+    */
+
+    let firstPageWidth =
+        A4_WIDTH;
+
+    let firstPageHeight =
+        A4_HEIGHT;
+
+
+    if (files.length > 0) {
+
+        const firstItem =
+            files[0];
+
+
+        if (
+            firstItem.type === "pdf"
+        ) {
+
+            try {
+
+                const bytes =
+                    await firstItem.file.arrayBuffer();
+
+
+                const pdf =
+                    await pdfjsLib.getDocument({
+                        data: bytes
+                    }).promise;
+
+
+                const firstPage =
+                    await pdf.getPage(1);
+
+
+                const viewport =
+                    firstPage.getViewport({
+                        scale: 1
+                    });
+
+
+                firstPageWidth =
+                    viewport.width;
+
+                firstPageHeight =
+                    viewport.height;
+
+
+            } catch (error) {
+
+                console.warn(
+                    "Could not determine first PDF page size.",
+                    error
+                );
+
+            }
+
+        } else {
+
+            try {
+
+                const image =
+                    await loadImage(
+                        firstItem.file
+                    );
+
+
+                firstPageWidth =
+                    image.naturalWidth *
+                    72 / 96;
+
+                firstPageHeight =
+                    image.naturalHeight *
+                    72 / 96;
+
+
+            } catch (error) {
+
+                console.warn(
+                    "Could not determine first image size.",
+                    error
+                );
+
+            }
+
+        }
+
+    }
+
+
+    /* =========================
+       COVER SIZE
+    ========================= */
+
+    if (
+        coverSize.value === "first"
+    ) {
+
+        pageWidth =
+            firstPageWidth;
+
+        pageHeight =
+            firstPageHeight;
+
+    }
+
+
+    else if (
+        coverSize.value === "a4"
+    ) {
+
+        pageWidth =
+            A4_WIDTH;
+
+        pageHeight =
+            A4_HEIGHT;
+
+    }
+
+
+    else if (
+        coverSize.value === "letter"
+    ) {
+
+        pageWidth =
+            LETTER_WIDTH;
+
+        pageHeight =
+            LETTER_HEIGHT;
+
+    }
+
+
+    else if (
+        coverSize.value === "average"
+    ) {
+
+        let totalWidth = 0;
+
+        let totalHeight = 0;
+
+        let count = 0;
+
+
+        for (
+            const item of files
+        ) {
+
+            if (
+                item.type === "pdf"
+            ) {
+
+                try {
+
+                    const bytes =
+                        await item.file.arrayBuffer();
+
+
+                    const pdf =
+                        await pdfjsLib.getDocument({
+                            data: bytes
+                        }).promise;
+
+
+                    for (
+                        let i = 1;
+                        i <= pdf.numPages;
+                        i++
+                    ) {
+
+                        const page =
+                            await pdf.getPage(i);
+
+
+                        const viewport =
+                            page.getViewport({
+                                scale: 1
+                            });
+
+
+                        totalWidth +=
+                            viewport.width;
+
+                        totalHeight +=
+                            viewport.height;
+
+                        count++;
+
+                    }
+
+                } catch (error) {
+
+                    console.warn(
+                        "Could not read PDF for average size.",
+                        error
+                    );
+
+                }
+
+            } else {
+
+                try {
+
+                    const image =
+                        await loadImage(
+                            item.file
+                        );
+
+
+                    totalWidth +=
+                        image.naturalWidth *
+                        72 / 96;
+
+                    totalHeight +=
+                        image.naturalHeight *
+                        72 / 96;
+
+                    count++;
+
+
+                } catch (error) {
+
+                    console.warn(
+                        "Could not read image for average size.",
+                        error
+                    );
+
+                }
+
+            }
+
+        }
+
+
+        if (count > 0) {
+
+            pageWidth =
+                totalWidth / count;
+
+            pageHeight =
+                totalHeight / count;
+
+        }
+
+    }
+
+
+    const page =
+        outputPdf.addPage([
+            pageWidth,
+            pageHeight
+        ]);
+
+
+    /* =========================
+       WHITE BACKGROUND
+    ========================= */
+
+    page.drawRectangle({
+
+        x: 0,
+
+        y: 0,
+
+        width:
+            pageWidth,
+
+        height:
+            pageHeight,
+
+        color:
+            PDFLib.rgb(
+                1,
+                1,
+                1
+            )
+
+    });
+
+
+    /* =========================
+       FONTS
+    ========================= */
+
+    const font =
+        await outputPdf.embedFont(
+            PDFLib.StandardFonts.Helvetica
+        );
+
+
+    const boldFont =
+        await outputPdf.embedFont(
+            PDFLib.StandardFonts.HelveticaBold
+        );
+
+
+    /* =========================
+       SCALE
+    ========================= */
+
+    const scale =
+        Math.min(
+            pageWidth / 595.28,
+            pageHeight / 841.89
+        );
+
+
+    const safeScale =
+        Math.max(
+            0.55,
+            Math.min(
+                2,
+                scale
+            )
+        );
+
+
+    const left =
+        82 * safeScale;
+
+
+    const right =
+        pageWidth -
+        (82 * safeScale);
+
+
+    const contentWidth =
+        right - left;
+
+
+    /* =========================
+       ACCENT BAR
+    ========================= */
+
+    page.drawRectangle({
+
+        x:
+            48 * safeScale,
+
+        y:
+            72 * safeScale,
+
+        width:
+            5 * safeScale,
+
+        height:
+            pageHeight -
+            (144 * safeScale),
+
+        color:
+            PDFLib.rgb(
+                0.12,
+                0.12,
+                0.12
+            )
+
+    });
+
+
+    /* =========================
+       TEXT
+    ========================= */
+
+    const title =
+        coverTitle.value.trim() ||
+        "My Document";
+
+
+    const description =
+        coverSubtitle.value.trim();
+
+
+    const author =
+        coverAuthor.value.trim();
+
+
+    const date =
+        coverDate.value.trim();
+
+
+    /* =========================
+       DOCUMENT LABEL
+    ========================= */
+
+    const topMargin =
+        151 * safeScale;
+
+
+    page.drawText(
+        "DOCUMENT",
+        {
+
+            x:
+                left,
+
+            y:
+                pageHeight -
+                topMargin,
+
+            size:
+                11 * safeScale,
+
+            font:
+                boldFont,
+
+            color:
+                PDFLib.rgb(
+                    0.38,
+                    0.38,
+                    0.38
+                ),
+
+            characterSpacing:
+                2.2 * safeScale
+
+        }
+    );
+
+
+    /* =========================
+       TITLE WRAPPING
+    ========================= */
+
+    const titleSize =
+        title.length > 45
+            ? 29 * safeScale
+            : title.length > 28
+                ? 34 * safeScale
+                : 40 * safeScale;
+
+
+    const titleLines =
+        wrapText(
+            title,
+            boldFont,
+            titleSize,
+            contentWidth
+        );
+
+
+    let titleY =
+        pageHeight -
+        (236 * safeScale);
+
+
+    const titleLineHeight =
+        titleSize * 1.16;
+
+
+    /*
+        Limit the title so it cannot
+        consume the entire cover.
+    */
+
+    const maximumTitleLines =
+        Math.max(
+            2,
+            Math.floor(
+                (pageHeight * 0.27) /
+                titleLineHeight
+            )
+        );
+
+
+    const visibleTitleLines =
+        titleLines.slice(
+            0,
+            maximumTitleLines
+        );
+
+
+    visibleTitleLines.forEach(
+        line => {
+
+            page.drawText(
+                line,
+                {
+
+                    x:
+                        left,
+
+                    y:
+                        titleY,
+
+                    size:
+                        titleSize,
+
+                    font:
+                        boldFont,
+
+                    color:
+                        PDFLib.rgb(
+                            0.08,
+                            0.08,
+                            0.08
+                        )
+
+                }
+            );
+
+
+            titleY -=
+                titleLineHeight;
+
+        }
+    );
+
+
+    /* =========================
+       DIVIDER
+    ========================= */
+
+    const dividerY =
+        titleY -
+        (15 * safeScale);
+
+
+    page.drawLine({
+
+        start: {
+
+            x:
+                left,
+
+            y:
+                dividerY
+
+        },
+
+        end: {
+
+            x:
+                right,
+
+            y:
+                dividerY
+
+        },
+
+        thickness:
+            1 * safeScale,
+
+        color:
+            PDFLib.rgb(
+                0.84,
+                0.84,
+                0.84
+            )
+
+    });
+
+
+    /* =========================
+       DESCRIPTION
+    ========================= */
+
+    if (description) {
+
+        const descriptionSize =
+            15 * safeScale;
+
+
+        const descriptionLineHeight =
+            descriptionSize * 1.45;
+
+
+        const descriptionLines =
+            wrapText(
+                description,
+                font,
+                descriptionSize,
+                contentWidth
+            );
+
+
+        /*
+            Keep description away from
+            the bottom information.
+        */
+
+        const maxDescriptionHeight =
+            pageHeight * 0.28;
+
+
+        const maxDescriptionLines =
+            Math.max(
+                1,
+                Math.floor(
+                    maxDescriptionHeight /
+                    descriptionLineHeight
+                )
+            );
+
+
+        const visibleDescriptionLines =
+            descriptionLines.slice(
+                0,
+                maxDescriptionLines
+            );
+
+
+        let descriptionY =
+            dividerY -
+            (32 * safeScale);
+
+
+        visibleDescriptionLines.forEach(
+            line => {
+
+                page.drawText(
+                    line,
+                    {
+
+                        x:
+                            left,
+
+                        y:
+                            descriptionY,
+
+                        size:
+                            descriptionSize,
+
+                        font:
+                            font,
+
+                        color:
+                            PDFLib.rgb(
+                                0.38,
+                                0.38,
+                                0.38
+                            )
+
+                    }
+                );
+
+
+                descriptionY -=
+                    descriptionLineHeight;
+
+            }
+        );
+
+    }
+
+
+    /* =========================
+       AUTHOR / DATE
+    ========================= */
+
+    const bottomY =
+        150 * safeScale;
+
+
+    if (author) {
+
+        page.drawText(
+            "BY",
+            {
+
+                x:
+                    left,
+
+                y:
+                    bottomY +
+                    (35 * safeScale),
+
+                size:
+                    9 * safeScale,
+
+                font:
+                    boldFont,
+
+                color:
+                    PDFLib.rgb(
+                        0.48,
+                        0.48,
+                        0.48
+                    ),
+
+                characterSpacing:
+                    1.5 * safeScale
+
+            }
+        );
+
+
+        page.drawText(
+            author,
+            {
+
+                x:
+                    left,
+
+                y:
+                    bottomY,
+
+                size:
+                    13 * safeScale,
+
+                font:
+                    font,
+
+                color:
+                    PDFLib.rgb(
+                        0.15,
+                        0.15,
+                        0.15
+                    )
+
+            }
+        );
+
+    }
+
+
+    if (date) {
+
+        page.drawText(
+            date,
+            {
+
+                x:
+                    left,
+
+                y:
+                    95 * safeScale,
+
+                size:
+                    11 * safeScale,
+
+                font:
+                    font,
+
+                color:
+                    PDFLib.rgb(
+                        0.45,
+                        0.45,
+                        0.45
+                    )
+
+            }
+        );
+
+    }
+
+
+    /* =========================
+       DECORATIVE CIRCLE
+    ========================= */
+
+    page.drawCircle({
+
+        x:
+            pageWidth -
+            (87 * safeScale),
+
+        y:
+            95 * safeScale,
+
+        size:
+            23 * safeScale,
+
+        borderWidth:
+            1 * safeScale,
+
+        borderColor:
+            PDFLib.rgb(
+                0.82,
+                0.82,
+                0.82
+            ),
+
+        color:
+            PDFLib.rgb(
+                1,
+                1,
+                1
+            )
+
+    });
+
+
+    page.drawLine({
+
+        start: {
+
+            x:
+                pageWidth -
+                (99 * safeScale),
+
+            y:
+                95 * safeScale
+
+        },
+
+        end: {
+
+            x:
+                pageWidth -
+                (75 * safeScale),
+
+            y:
+                95 * safeScale
+
+        },
+
+        thickness:
+            1 * safeScale,
+
+        color:
+            PDFLib.rgb(
+                0.25,
+                0.25,
+                0.25
+            )
+
+    });
+
+
+    page.drawLine({
+
+        start: {
+
+            x:
+                pageWidth -
+                (87 * safeScale),
+
+            y:
+                83 * safeScale
+
+        },
+
+        end: {
+
+            x:
+                pageWidth -
+                (87 * safeScale),
+
+            y:
+                107 * safeScale
+
+        },
+
+        thickness:
+            1 * safeScale,
+
+        color:
+            PDFLib.rgb(
+                0.25,
+                0.25,
+                0.25
+            )
+
+    });
+
+}
+
+
+/* =========================
+   TEXT WRAPPING
+========================= */
+
+function wrapText(
+    text,
+    font,
+    size,
+    maxWidth
+) {
+
+    /*
+        Respect manually entered
+        paragraph breaks.
+    */
+
+    const paragraphs =
+        text.split(/\r?\n/);
+
+
+    const lines = [];
+
+
+    for (
+        const paragraph of paragraphs
+    ) {
+
+        /*
+            Preserve empty lines.
+        */
+
+        if (
+            paragraph.trim() === ""
+        ) {
+
+            lines.push("");
+
+            continue;
+
+        }
+
+
+        const words =
+            paragraph.trim().split(/\s+/);
+
+
+        let currentLine = "";
+
+
+        for (
+            const word of words
+        ) {
+
+            const testLine =
+                currentLine
+                    ? currentLine +
+                      " " +
+                      word
+                    : word;
+
+
+            const width =
+                font.widthOfTextAtSize(
+                    testLine,
+                    size
+                );
+
+
+            if (
+                width <= maxWidth
+            ) {
+
+                currentLine =
+                    testLine;
+
+            } else {
+
+                if (
+                    currentLine
+                ) {
+
+                    lines.push(
+                        currentLine
+                    );
+
+                }
+
+
+                /*
+                    If a single word itself
+                    is wider than the page,
+                    split it safely.
+                */
+
+                if (
+                    font.widthOfTextAtSize(
+                        word,
+                        size
+                    ) > maxWidth
+                ) {
+
+                    let piece = "";
+
+
+                    for (
+                        const character
+                        of word
+                    ) {
+
+                        const testPiece =
+                            piece +
+                            character;
+
+
+                        if (
+                            font.widthOfTextAtSize(
+                                testPiece,
+                                size
+                            ) <= maxWidth
+                        ) {
+
+                            piece =
+                                testPiece;
+
+                        } else {
+
+                            if (piece) {
+
+                                lines.push(
+                                    piece
+                                );
+
+                            }
+
+                            piece =
+                                character;
+
+                        }
+
+                    }
+
+
+                    currentLine =
+                        piece;
+
+                } else {
+
+                    currentLine =
+                        word;
+
+                }
+
+            }
+
+        }
+
+
+        if (
+            currentLine
+        ) {
+
+            lines.push(
+                currentLine
+            );
+
+        }
+
+    }
+
+
+    return lines;
+
+}
+
+
+/* =========================
+   ADD IMAGE
+========================= */
+
+async function addImageToPdf(
+    outputPdf,
+    file
+) {
+
+    const bytes =
+        await file.arrayBuffer();
+
+
+    let image;
+
+
+    if (
+        file.type === "image/png"
+    ) {
+
+        image =
+            await outputPdf.embedPng(
+                bytes
+            );
+
+    } else {
+
+        image =
+            await outputPdf.embedJpg(
+                bytes
+            );
+
+    }
+
+
+    const width =
+        image.width;
+
+    const height =
+        image.height;
+
+
+    const page =
+        outputPdf.addPage([
+            width,
+            height
+        ]);
+
+
+    page.drawImage(
+        image,
+        {
+
+            x: 0,
+
+            y: 0,
+
+            width:
+                width,
+
+            height:
+                height
+
+        }
+    );
+
+}
+
+
+/* =========================
+   ADD PDF
+========================= */
+
+async function addEntirePdf(
+    outputPdf,
+    file
+) {
+
+    const bytes =
+        await file.arrayBuffer();
+
+
+    const sourcePdf =
+        await PDFLib.PDFDocument.load(
+            bytes
+        );
+
+
+    const pageIndices =
+        sourcePdf
+            .getPages()
+            .map(
+                (_, index) =>
+                    index
+            );
+
+
+    const copiedPages =
+        await outputPdf.copyPages(
+            sourcePdf,
+            pageIndices
+        );
+
+
+    for (
+        const page of copiedPages
+    ) {
+
+        outputPdf.addPage(
+            page
+        );
+
+    }
+
+}
+
+
+/* =========================
+   CLEAR ALL
+========================= */
+
+clearAllButton.addEventListener(
+    "click",
+    function () {
+
+        files = [];
+
+        fileInput.value = "";
+
+        renderFiles();
+
+    }
+);
+
+
+/* =========================
+   LOAD IMAGE
+========================= */
+
+function loadImage(file) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            const img =
+                new Image();
+
+
+            const url =
+                URL.createObjectURL(
+                    file
+                );
+
+
+            img.onload = () => {
+
+                URL.revokeObjectURL(
+                    url
+                );
+
+                resolve(img);
+
+            };
+
+
+            img.onerror = () => {
+
+                URL.revokeObjectURL(
+                    url
+                );
+
+                reject(
+                    new Error(
+                        "Could not load image."
+                    )
+                );
+
+            };
+
+
+            img.src =
+                url;
+
+        }
+    );
+
+}
+
+
+/* =========================
+   ESCAPE HTML
+========================= */
+
+function escapeHtml(text) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        text;
+
+
+    return div.innerHTML;
+
+}
+
+
+/* =========================
+   INITIAL RENDER
+========================= */
+
+renderFiles();
+
+</script>
+
 </body>
-
 </html>
